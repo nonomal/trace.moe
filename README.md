@@ -85,3 +85,52 @@ You can check the indexing process the from logs of api server
 Other configurations like port mapping are defined in compose.yml
 
 You can also increase `MAX_WORKER` to make hashing faster.
+
+### Using pre-hashed data
+
+> Loading all 100,000+ files to Milvus requires about 192GB RAM. (will crash if it runs out of memory)
+
+1. Download the pre-hashed data here: [trace.moe database dump 2025-10](https://nyaa.si/view/2029214)
+
+2. Install zstd
+
+```
+sudo apt install zstd   # Ubuntu / Debian
+sudo yum install zstd   # CentOS / RHEL
+sudo dnf install zstd   # Fedora
+sudo pacman -S zstd     # Arch Linux
+```
+
+3. Start all containers
+
+```
+docker compose up -d
+```
+
+4. Load the database dump to postgres
+
+```
+docker exec -i tracemoe-postgres-1 psql -U postgres postgres < <(zstdcat dump.sql.zst)
+```
+
+This process takes a few minutes. You can ignore all errors like `ERROR: relation "xxx" already exists`.
+
+5. Load all hashes to Milvus
+
+```
+docker exec -i tracemoe-postgres-1 psql -U postgres postgres < <(echo "UPDATE files SET status='HASHED'")
+```
+
+wait a minute for scan to start, or trigger it manually by
+
+```
+curl http://localhost:3001/scan
+```
+
+This process may take 24 hours. You can check the progress by
+
+```
+docker exec -i tracemoe-postgres-1 psql -U postgres postgres < <(echo "SELECT status, COUNT(*) FROM files GROUP BY status")
+```
+
+Once all files are LOADED, it's ready for search. But background optimization in Milvus may take a few days to complete.
