@@ -134,3 +134,13 @@ docker exec -i tracemoe-postgres-1 psql -U postgres postgres < <(echo "SELECT st
 ```
 
 Once all files are LOADED, it's ready for search. But background optimization in Milvus may take a few days to complete.
+
+### How to cleanup everything
+
+To remove all docker containers and delete all database volumes:
+
+```
+docker compose down -v
+```
+
+Finally, manually clean up the `VIDEO_PATH` directory if you need to.
